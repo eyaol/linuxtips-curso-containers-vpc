@@ -1,5 +1,5 @@
 #
-# Create Elastic IP
+# Create Elastic IPs
 #
 resource "aws_eip" "vpc_eip" {
   for_each = toset(var.availability_zones)
@@ -12,17 +12,17 @@ resource "aws_eip" "vpc_eip" {
 }
 
 #
-# Create Nat Gateway
+# Create Nat Gateways
 #
 resource "aws_nat_gateway" "nat_gateways" {
-  for_each = aws_eip.vpc_eip
+  for_each = toset(var.availability_zones)
 
-  allocation_id = each.value.id
+  allocation_id = aws_eip.vpc_eip[each.key].id
 
   subnet_id = lookup(
-    { for s in aws_subnet.public_subnets : s.availability_zone => s.id }, 
-  each.key)
-  
+    { for subnet in aws_subnet.public_subnets : subnet.availability_zone => subnet.id }, each.key
+  )
+
   tags = {
     Name = format("%s-nat-gtw-%s", var.project_name, each.key)
   }
